@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from .models import Tweet
-from .forms import TweetForm,UserRegistrationForm
+from .forms import TweetForm,UserRegistrationForm,CommentForm
 from django.shortcuts import get_object_or_404,redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login
+from django.contrib.auth import login,logout as auth_logout
+from django.db.models import Q
 # Create your views here.
 
 def index(request):
@@ -11,8 +12,9 @@ def index(request):
 
 def tweet_list(request):
     tweets= Tweet.objects.all().order_by('-created_at')
-    return render(request,'tweet_list.html',{'tweets':tweets})
-@login_required
+    comment_form = CommentForm()
+    return render(request,'tweet_list.html',{'tweets':tweets,'comment_form': comment_form})
+@login_required(login_url='login')
 def tweet_create(request):
     if request.method == "POST":
         form=TweetForm(request.POST,request.FILES)
@@ -58,3 +60,46 @@ def register(request):
      else:
          form=UserRegistrationForm()
      return render(request,'registration/register.html',{'form':form})
+
+def login_view(request):
+    if request.method == "POST":
+        login(request)
+        return redirect('tweet_list')
+
+def user_logout(request):
+    if request.method == "POST":
+        auth_logout(request)  # now calling the real Django logout function
+        return render(request, 'registration/logout.html')
+    
+def search_view(request):
+    query = request.GET.get('q')
+    results = []
+    if query:
+        results = Tweet.objects.filter(
+            Q(text__icontains=query) | Q(user__username__icontains=query)
+        )
+
+    return render(request, 'search_results.html', {'results': results, 'query': query})
+
+@login_required(login_url='login')
+def like_tweet(request, tweet_id):
+    tweet = get_object_or_404(Tweet, id=tweet_id)
+
+    if request.user in tweet.likes.all():
+        tweet.likes.remove(request.user)  # Unlike
+    else:
+        tweet.likes.add(request.user)     # Like
+
+    return redirect('tweet_list')  # Redirect to home
+
+@login_required(login_url='login')
+def add_comment(request, tweet_id):
+    tweet = get_object_or_404(Tweet, id=tweet_id)
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.tweet = tweet
+            comment.user = request.user
+            comment.save()
+    return redirect('tweet_list')

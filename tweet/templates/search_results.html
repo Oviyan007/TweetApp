@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Search Results for "{{ query }}"</h2>
+
+{% if results %}
+    <ul class="list-group">
+        {% for tweet in results %}
+            <li class="list-group-item">
+                <strong>{{ tweet.user.username }}</strong> — {{ tweet.text }}
+                <br>
+                <small class="text-muted">{{ tweet.created_at|date:"M d, Y H:i" }}</small>
+                {% if tweet.photo %}
+                    <br>
+                    <img src="{{ tweet.photo.url }}" alt="Tweet photo" style="max-width: 200px; margin-top: 5px;">
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No results found for "{{ query }}"</p>
+{% endif %}
+{% endblock %}

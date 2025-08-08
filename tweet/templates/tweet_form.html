@@ -1,21 +1,40 @@
 {% extends "layout.html" %}
+
 {% block title %}
-TWEET
+    {% if form.instance.pk %} Edit Tweet {% else %} Create Tweet {% endif %}
 {% endblock %}
+
 {% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Welcome Heading -->
+            <div class="text-center mb-4">
+                <h1 class="text-light fw-bold">Welcome to Django Project</h1>
+                <p class="text-muted">Share your thoughts with the world</p>
+            </div>
 
-<h1 class="text-center text-white mt-4">Welcome to Django Project </h1>
-<h2>{% if form.instance.pk %} 
-    Edit Tweet
-    {% else %} 
-    Create Tweet 
-    {% endif %}
-    <form method="post" enctype="multipart/form-data"class="form">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn btn-warning" type="submit">Submit</button>
-    </form>
-    <a href="{% url 'tweet_list' %}">Back to tweet list</a>
-</h2>
+            <!-- Tweet Form Card -->
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    {% if form.instance.pk %} Edit Tweet {% else %} Create Tweet {% endif %}
+                </div>
+                <div class="card-body ">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.as_p }}
+                        </div>
+                        <button class="btn btn-warning w-100" type="submit">Submit</button>
+                    </form>
+                </div>
+            </div>
 
+            <!-- Back Link -->
+            <div class="text-center mt-3">
+                <a href="{% url 'tweet_list' %}" class="btn btn-outline-light btn-sm"> Back to Tweet List</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

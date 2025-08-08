@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tweet',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL ='/media/'
 MEDIA_ROOT=os.path.join(BASE_DIR,'media')
 
-LOGIN_URL='/account/login'
-LOGIN_REDIRECT_URL ='/tweet/'
-LOGOUT_REDIRECT_URL ='/tweet/'
+LOGIN_REDIRECT_URL = 'tweet_list'
