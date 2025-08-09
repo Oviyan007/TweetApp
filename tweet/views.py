@@ -1,10 +1,15 @@
 from django.shortcuts import render
 from .models import Tweet
+from django.contrib import messages
 from .forms import TweetForm,UserRegistrationForm,CommentForm
 from django.shortcuts import get_object_or_404,redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login,logout as auth_logout
+from django.contrib.auth import authenticate,login,logout as auth_logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.core.signing import TimestampSigner
+from django.core.signing import BadSignature, SignatureExpired
 # Create your views here.
 
 def index(request):
@@ -13,7 +18,7 @@ def index(request):
 def tweet_list(request):
     tweets= Tweet.objects.all().order_by('-created_at')
     comment_form = CommentForm()
-    return render(request,'tweet_list.html',{'tweets':tweets,'comment_form': comment_form})
+    return render(request,'tweet_list.html',{'tweets':tweets,'form': comment_form})
 @login_required(login_url='login')
 def tweet_create(request):
     if request.method == "POST":
@@ -47,24 +52,44 @@ def tweet_delete(request,tweet_id):
         return redirect('tweet_list')
     return render(request,'tweet_confrim_delete.html',{'tweet':tweet})
 
+from django.contrib import messages
+
 def register(request):
-     if request.method == "POST":
-        form=UserRegistrationForm(request.POST) 
+    if request.method == "POST":
+        form = UserRegistrationForm(request.POST) 
         if form.is_valid():
-            user =form.save(commit=False)
+            user = form.save(commit=False)
             user.set_password(form.cleaned_data['password1'])
+            user.is_active = False  # Require email confirmation
             user.save()
-            login(request,user)
-            return redirect('tweet_list')
+            
+            # Redirect to custom "confirm your email" page
+            return redirect('email_confirmation_sent')
          
-     else:
-         form=UserRegistrationForm()
-     return render(request,'registration/register.html',{'form':form})
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'registration/register.html', {'form': form})
+
 
 def login_view(request):
     if request.method == "POST":
-        login(request)
-        return redirect('tweet_list')
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('tweet_list')
+            else:
+                messages.error(request, "Invalid username or password.")
+        else:
+            messages.error(request, "Invalid username or password.")
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, 'registration/login.html', {'form': form})
 
 def user_logout(request):
     if request.method == "POST":
@@ -103,3 +128,23 @@ def add_comment(request, tweet_id):
             comment.user = request.user
             comment.save()
     return redirect('tweet_list')
+
+
+signer = TimestampSigner()
+
+def confirm_email(request, token):
+    try:
+        username = signer.unsign(token, max_age=60*60*24)  # 24 hours
+        user = User.objects.get(username=username)
+        user.is_active = True
+        user.save()
+        return redirect('login')  # Redirect to login after confirmation
+    except (BadSignature, SignatureExpired, User.DoesNotExist):
+        return redirect('error_page')
+    
+def email_confirmation_sent(request):
+    return render(request, 'registration/email_confirmation_sent.html')
+
+def test_message(request):
+    messages.warning(request, "This is a test warning!")
+    return render(request, 'registration/login.html')

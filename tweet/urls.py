@@ -12,6 +12,9 @@ urlpatterns = [
      path('search/', views.search_view, name='search'),
      path('tweet/<int:tweet_id>/like/', views.like_tweet, name='like_tweet'),
     path('tweet/<int:tweet_id>/comment/', views.add_comment, name='add_comment'),
+  path('confirm-email/<str:token>/', views.confirm_email, name='confirm_email'),
+  path('email-confirmation-sent/', views.email_confirmation_sent, name='email_confirmation_sent'),
+  path('test/', views.test_message),
     
     
     
